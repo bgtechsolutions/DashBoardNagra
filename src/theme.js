@@ -1,0 +1,22 @@
+// ─── Design tokens ───────────────────────────────────────────
+export const T = {
+  bg:        "#0a0d12",
+  bg3:       "#141920",
+  card:      "rgba(255,255,255,0.04)",
+  border:    "rgba(255,255,255,0.07)",
+  border2:   "rgba(255,255,255,0.12)",
+  text:      "#e2e8f0",
+  muted:     "#64748b",
+  muted2:    "#94a3b8",
+  blue:      "#3b82f6",
+  blue2:     "#60a5fa",
+  blueDim:   "rgba(59,130,246,0.12)",
+  green:     "#10b981",
+  green2:    "#34d399",
+  greenDim:  "rgba(16,185,129,0.12)",
+  amber:     "#f59e0b",
+  amberDim:  "rgba(245,158,11,0.12)",
+  violet:    "#8b5cf6",
+  violetDim: "rgba(139,92,246,0.12)",
+  red:       "#ef4444",
+};
