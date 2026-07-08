@@ -15,6 +15,7 @@ import { calcMetrics } from "../lib/metrics";
 import { Card, SLabel } from "../components/ui";
 import { TrendChart, BarTooltip } from "../components/charts";
 import { KpiCard } from "../components/KpiCard";
+import { HelpPanel } from "../components/HelpPanel";
 import { BreakdownPanel } from "../components/BreakdownPanel";
 import { OrigemPanel } from "../components/OrigemPanel";
 import { VendedorPanel } from "../components/VendedorPanel";
@@ -98,6 +99,9 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
           </div>
         </div>
       </div>
+
+      {/* Guia rápido para o dono */}
+      <HelpPanel />
 
       {/* Aviso de coorte em maturação */}
       {emMaturacao && (
