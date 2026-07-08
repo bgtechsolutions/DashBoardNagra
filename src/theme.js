@@ -18,5 +18,7 @@ export const T = {
   amberDim:  "rgba(245,158,11,0.12)",
   violet:    "#8b5cf6",
   violetDim: "rgba(139,92,246,0.12)",
+  cyan:      "#22d3ee",
+  cyanDim:   "rgba(34,211,238,0.12)",
   red:       "#ef4444",
 };

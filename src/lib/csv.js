@@ -13,6 +13,9 @@ export function parseCSV(text) {
     return {
       data: cols[0] || "", evento: cols[1] || "", nome: cols[2] || "",
       numero: cols[3] || "", statusAnterior: cols[4] || "", statusNovo: cols[5] || "",
+      // Coluna opcional "Origem" (Meta Ads / Google Ads / Indefinido).
+      // Populada pelo n8n; ausente = tratada como indefinido.
+      origem: cols[6] || "",
     };
   }).filter((d) => d.data && d.data !== "Data");
 }

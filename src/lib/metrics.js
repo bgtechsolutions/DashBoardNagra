@@ -1,4 +1,4 @@
-import { isQualif, isContact, isCurious, isLead } from "./status";
+import { isQualif, isContact, isCurious, isLead, VENDEDORES } from "./status";
 
 // ─── Calcular métricas por contatos únicos ────────────────────
 // Retorna objeto com todos os KPIs calculados corretamente
@@ -42,5 +42,50 @@ export function calcMetrics(f) {
   const nowQualif = everQualifSet.size;
   const rate      = leads > 0 ? Math.round((nowQualif / leads) * 100) : 0;
 
-  return { leads, stillLead, contact: nowContact, curious: nowCurious, qualif: nowQualif, rate, latestStatus, leadsSet };
+  // 5. Origem por contato (Meta / Google / Indefinido) — vem da coluna
+  // "Origem" gravada na linha de "Lead Criado". Cruza com qualificado.
+  const origemByKey = {};
+  f.forEach((d) => {
+    const k = key(d);
+    if (!k || !leadsSet.has(k)) return;
+    if (origemByKey[k]) return;          // mantém a primeira origem vista
+    const o = normOrigem(d.origem);
+    if (o) origemByKey[k] = o;
+  });
+
+  const byOrigem = {
+    meta:       { leads: 0, qualif: 0 },
+    google:     { leads: 0, qualif: 0 },
+    indefinido: { leads: 0, qualif: 0 },
+  };
+  leadsSet.forEach((k) => {
+    const o = origemByKey[k] || "indefinido";
+    byOrigem[o].leads++;
+    if (everQualifSet.has(k)) byOrigem[o].qualif++;
+  });
+
+  // 6. Vendedores humanos — status ATUAL vira o nome de quem recebeu o lead.
+  // Bate com as colunas do kanban (Giovani, Alessandro, Murilo).
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const byVendedor = {};
+  let comVendedor = 0;
+  let aguardando  = 0;
+  Object.values(latestStatus).forEach((s) => {
+    if (VENDEDORES.includes(s)) { byVendedor[cap(s)] = (byVendedor[cap(s)] || 0) + 1; comVendedor++; }
+    else if (s === "responder") { aguardando++; }
+  });
+
+  return {
+    leads, stillLead, contact: nowContact, curious: nowCurious, qualif: nowQualif, rate,
+    latestStatus, leadsSet, byOrigem, byVendedor, comVendedor, aguardando,
+  };
+}
+
+// Aceita rótulos variados da planilha ("Meta Ads", "meta", "google", …)
+// e reduz para as três chaves canônicas.
+function normOrigem(s) {
+  const v = (s || "").toLowerCase();
+  if (v.includes("meta") || v.includes("face") || v.includes("insta")) return "meta";
+  if (v.includes("google") || v.includes("ads") && !v.includes("meta")) return "google";
+  return "";
 }

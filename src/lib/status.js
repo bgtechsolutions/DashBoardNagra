@@ -6,16 +6,21 @@ import { T } from "../theme";
 // • contacted + responder  → Em andamento ("responder" = aguardando resposta, ainda ativo)
 // • curious/curioso/proposal → Curioso (proposal = curioso conforme cliente)
 // • new/lead               → Lead
-// • giovani/murilo/etc     → ignorados (leads já contados via "ever qualif")
+// • giovani/murilo/etc     → vendedor humano (lead entregue ao time)
 const QUALIF_STATUSES  = new Set(["qualified", "qualificado"]);
 const CONTACT_STATUSES = new Set(["contacted", "em andamento", "responder"]);
 const CURIOUS_STATUSES = new Set(["curious", "curioso", "proposal"]);
 const LEAD_STATUSES    = new Set(["new", "lead"]);
 
-export const isQualif  = (s) => QUALIF_STATUSES.has((s || "").toLowerCase());
-export const isContact = (s) => CONTACT_STATUSES.has((s || "").toLowerCase());
-export const isCurious = (s) => CURIOUS_STATUSES.has((s || "").toLowerCase());
-export const isLead    = (s) => LEAD_STATUSES.has((s || "").toLowerCase());
+// Vendedores humanos: o status vira o nome de quem recebeu o lead.
+export const VENDEDORES = ["giovani", "murilo", "alessandro"];
+
+export const isQualif   = (s) => QUALIF_STATUSES.has((s || "").toLowerCase());
+export const isContact  = (s) => CONTACT_STATUSES.has((s || "").toLowerCase());
+export const isCurious  = (s) => CURIOUS_STATUSES.has((s || "").toLowerCase());
+export const isLead     = (s) => LEAD_STATUSES.has((s || "").toLowerCase());
+export const isVendedor = (s) => VENDEDORES.includes((s || "").toLowerCase());
+export const isAguard   = (s) => (s || "").toLowerCase() === "responder";
 
 // Badge label/color por status
 const STATUS_BADGE = {
@@ -27,11 +32,11 @@ const STATUS_BADGE = {
   curioso:      { label: "Curioso",      color: T.amber,  dim: T.amberDim  },
   qualified:    { label: "Qualificado",  color: T.violet, dim: T.violetDim },
   qualificado:  { label: "Qualificado",  color: T.violet, dim: T.violetDim },
-  giovani:      { label: "Qualificado",  color: T.violet, dim: T.violetDim },
-  murilo:       { label: "Qualificado",  color: T.violet, dim: T.violetDim },
-  alessandro:   { label: "Qualificado",  color: T.violet, dim: T.violetDim },
+  giovani:      { label: "Giovani",      color: T.cyan,   dim: T.cyanDim   },
+  murilo:       { label: "Murilo",       color: T.cyan,   dim: T.cyanDim   },
+  alessandro:   { label: "Alessandro",   color: T.cyan,   dim: T.cyanDim   },
   negotiation:  { label: "Negociação",   color: T.violet, dim: T.violetDim },
-  responder:    { label: "Em andamento", color: T.green,  dim: T.greenDim  },
+  responder:    { label: "Aguardando",   color: T.amber,  dim: T.amberDim  },
   proposal:     { label: "Curioso",      color: T.amber,  dim: T.amberDim  },
 };
 

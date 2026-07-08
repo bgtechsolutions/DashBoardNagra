@@ -6,6 +6,7 @@ import {
 import {
   RefreshCw, Wifi, WifiOff, Loader2, TrendingUp,
   Users, MessageCircle, Star, ArrowRight, Activity, Clock, Zap,
+  UserCheck, Megaphone,
 } from "lucide-react";
 import { T } from "../theme";
 import { parseDataBR } from "../lib/csv";
@@ -15,6 +16,8 @@ import { Card, SLabel } from "../components/ui";
 import { TrendChart, BarTooltip } from "../components/charts";
 import { KpiCard } from "../components/KpiCard";
 import { BreakdownPanel } from "../components/BreakdownPanel";
+import { OrigemPanel } from "../components/OrigemPanel";
+import { VendedorPanel } from "../components/VendedorPanel";
 import { LogItem } from "../components/LogItem";
 
 // ─── Dashboard page ──────────────────────────────────────────
@@ -30,7 +33,7 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
 
   // Todos os KPIs calculados a partir de contatos ÚNICOS
   const m = calcMetrics(f);
-  const { leads, contact, curious, qualif, rate, stillLead } = m;
+  const { leads, contact, curious, qualif, rate, stillLead, byOrigem, byVendedor, comVendedor, aguardando } = m;
 
   // Sparklines por dia (baseados em eventos únicos diários)
   const byDay = {};
@@ -50,13 +53,12 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
   const trendData = days.map((d) => ({ name: d.split("/").slice(0, 2).join("/"), leads: byDay[d].lead, qualif: byDay[d].qualif }));
 
   // Funil = onde cada contato ESTÁ AGORA (status atual único)
-  // stillLead = quem ainda não avançou | contact/curious/qualif = status atual
-  // Soma = leads totais recebidos
   const funnelData = [
-    { name: "Ainda Lead",   value: stillLead, color: T.blue   },
-    { name: "Em andamento", value: contact,   color: T.green  },
-    { name: "Curioso",      value: curious,   color: T.amber  },
-    { name: "Qualificado",  value: qualif,    color: T.violet },
+    { name: "Ainda Lead",   value: stillLead,   color: T.blue   },
+    { name: "Em andamento", value: contact,     color: T.green  },
+    { name: "Curioso",      value: curious,     color: T.amber  },
+    { name: "Qualificado",  value: qualif,      color: T.violet },
+    { name: "Com vendedor", value: comVendedor, color: T.cyan   },
   ];
 
   const recentes = [...f].reverse().slice(0, 6);
@@ -95,7 +97,7 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
         </div>
       </div>
 
-      {/* KPI grid — todos baseados em contatos únicos */}
+      {/* KPI grid — os 5 originais (contatos únicos) */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 16, marginBottom: 16 }}>
         <KpiCard icon={Users}         label="Leads recebidos"   value={leads}   color={T.blue}   dim={T.blueDim}   delay={0}   sparkData={spLeads}   />
         <KpiCard icon={MessageCircle} label="Em andamento"      value={contact} color={T.green}  dim={T.greenDim}  delay={70}  sparkData={spContact} />
@@ -104,15 +106,31 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
         <KpiCard icon={TrendingUp}    label="Taxa qualificação" value={rate}    color={T.amber}  dim={T.amberDim}  delay={280} suffix="%"            />
       </div>
 
+      {/* KPI grid — novos quadrados */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 16 }}>
+        <KpiCard icon={UserCheck} label="Entregues ao time"  value={comVendedor}          color={T.cyan}  dim={T.cyanDim}  delay={0}   />
+        <KpiCard icon={Clock}     label="Aguardando resposta" value={aguardando}          color={T.amber} dim={T.amberDim} delay={70}  />
+        <KpiCard icon={Megaphone} label="Meta Ads"           value={byOrigem.meta.leads}   color={T.blue}  dim={T.blueDim}  delay={140} />
+        <KpiCard icon={Megaphone} label="Google Ads"         value={byOrigem.google.leads} color={T.amber} dim={T.amberDim} delay={210} />
+      </div>
+
       {/* Breakdown */}
       <BreakdownPanel leads={leads} stillLead={stillLead} contact={contact} curious={curious} qualif={qualif} rate={rate} />
+
+      {/* Origem dos leads (Meta vs Google) × qualificação */}
+      <OrigemPanel byOrigem={byOrigem} totalLeads={leads} />
+
+      {/* Leads entregues ao time — por vendedor */}
+      <div style={{ marginBottom: 16 }}>
+        <VendedorPanel byVendedor={byVendedor} />
+      </div>
 
       {/* Bottom grid */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
         <Card style={{ padding: 28 }}>
           <SLabel icon={Activity}>Funil de conversão</SLabel>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={funnelData} barSize={32} margin={{ top: 0, right: 0, bottom: 0, left: -24 }}>
+            <BarChart data={funnelData} barSize={30} margin={{ top: 0, right: 0, bottom: 0, left: -24 }}>
               <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.04)" />
               <XAxis dataKey="name" tick={{ fontSize: 10, fill: T.muted }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: T.muted }} axisLine={false} tickLine={false} allowDecimals={false} />
