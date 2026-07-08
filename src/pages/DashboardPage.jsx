@@ -35,8 +35,8 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
 
   // KPIs por COORTE: a data = quando o lead ENTROU; status/conversão do histórico inteiro
   const m = calcMetrics(dados, inRange);
+  const { leads, contact, curious, qualif, qualifAtual, rate, stillLead, byOrigem, byVendedor, comVendedor, aguardando } = m;
   const emMaturacao = new Date(end + "T23:59:59") >= new Date(Date.now() - 7 * 864e5);
-  const { leads, contact, curious, qualif, rate, stillLead, byOrigem, byVendedor, comVendedor, aguardando } = m;
 
   // Sparklines por dia (baseados em eventos únicos diários)
   const byDay = {};
@@ -60,7 +60,7 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
     { name: "Ainda Lead",   value: stillLead,   color: T.blue   },
     { name: "Em andamento", value: contact,     color: T.green  },
     { name: "Curioso",      value: curious,     color: T.amber  },
-    { name: "Qualificado",  value: qualif,      color: T.violet },
+    { name: "Qualificado",  value: qualifAtual, color: T.violet },
     { name: "Com vendedor", value: comVendedor, color: T.cyan   },
   ];
 
@@ -129,7 +129,7 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
       </div>
 
       {/* Breakdown */}
-      <BreakdownPanel leads={leads} stillLead={stillLead} contact={contact} curious={curious} qualif={qualif} rate={rate} />
+      <BreakdownPanel leads={leads} stillLead={stillLead} contact={contact} curious={curious} qualif={qualifAtual} comVendedor={comVendedor} />
 
       {/* Origem dos leads (Meta vs Google) × qualificação */}
       <OrigemPanel byOrigem={byOrigem} totalLeads={leads} />

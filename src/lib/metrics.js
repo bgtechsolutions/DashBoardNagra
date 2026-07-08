@@ -4,25 +4,35 @@ import { parseDataBR } from "./csv";
 // ─── Métricas por COORTE ──────────────────────────────────────
 // `allRows`  = TODO o histórico (não filtrado).
 // `inCohort` = fn(dataStr) → true se a data de criação cai no período.
-//
-// A data do filtro define QUANDO o lead entrou (coorte). O status/qualificação
-// é lido do histórico INTEIRO — então um lead que entrou em junho e fechou em
-// julho conta como qualificado na coorte de junho. Isso dá a taxa real de
-// conversão (períodos recentes ficam "em maturação", o que é honesto).
 export function calcMetrics(allRows, inCohort) {
-  const key = (d) => (d.numero || "").trim() || (d.nome || "").trim();
+  // Ponte crmRecordId → telefone.
+  // As mudanças para VENDEDOR (giovani/alessandro/murilo) vêm com o crmRecordId
+  // no "Nome" e o telefone VAZIO. Já as mudanças de status da IA trazem o mesmo
+  // crmRecordId COM telefone — então religamos o vendedor ao telefone do lead.
+  const recToPhone = {};
+  allRows.forEach((d) => {
+    const nome = (d.nome || "").trim();
+    const num  = (d.numero || "").trim();
+    if (nome && num && !recToPhone[nome]) recToPhone[nome] = num;
+  });
+  const keyOf = (d) => {
+    const num = (d.numero || "").trim();
+    if (num) return num;
+    const nome = (d.nome || "").trim();
+    return recToPhone[nome] || nome;   // linha sem telefone → busca pelo crmRecordId
+  };
 
   // 1. Coorte = leads criados dentro do período
   const leadsSet = new Set();
   allRows.filter(d => d.evento === "Lead Criado" && inCohort(d.data))
-         .forEach(d => { if (key(d)) leadsSet.add(key(d)); });
+         .forEach(d => { const k = keyOf(d); if (k) leadsSet.add(k); });
   const leads = leadsSet.size;
 
-  // 2. Status ATUAL de cada contato — calculado sobre o HISTÓRICO INTEIRO
+  // 2. Status ATUAL de cada contato — histórico inteiro, ordem cronológica
   const latestStatus = {};
   const sorted = [...allRows].sort((a, b) => parseDataBR(a.data) - parseDataBR(b.data));
   sorted.forEach((d) => {
-    const k = key(d);
+    const k = keyOf(d);
     if (!k) return;
     if (d.evento === "Lead Criado") latestStatus[k] = "lead";
     if (d.statusNovo.trim()) latestStatus[k] = d.statusNovo.trim().toLowerCase();
@@ -30,14 +40,15 @@ export function calcMetrics(allRows, inCohort) {
 
   // 3. Status atual — só da coorte
   const cohortStatuses = [...leadsSet].map(k => latestStatus[k]).filter(Boolean);
-  const stillLead  = cohortStatuses.filter(isLead).length;
-  const nowContact = cohortStatuses.filter(isContact).length;
-  const nowCurious = cohortStatuses.filter(isCurious).length;
+  const stillLead   = cohortStatuses.filter(isLead).length;
+  const nowContact  = cohortStatuses.filter(isContact).length;
+  const nowCurious  = cohortStatuses.filter(isCurious).length;
+  const qualifAtual = cohortStatuses.filter(isQualif).length;   // qualificados AGORA (funil)
 
-  // 4. QUALIFICADOS: leads da coorte que em ALGUM MOMENTO qualificaram (todo o histórico)
+  // 4. QUALIFICADOS (KPI) = coorte que qualificou em ALGUM momento (todo o histórico)
   const everQualifSet = new Set(
     allRows.filter(d => isQualif(d.statusNovo))
-     .map(d => key(d))
+     .map(d => keyOf(d))
      .filter(k => k && leadsSet.has(k))
   );
   const nowQualif = everQualifSet.size;
@@ -46,9 +57,9 @@ export function calcMetrics(allRows, inCohort) {
   // 5. Origem por contato (histórico inteiro), só da coorte
   const origemByKey = {};
   allRows.forEach((d) => {
-    const k = key(d);
+    const k = keyOf(d);
     if (!k || !leadsSet.has(k)) return;
-    if (origemByKey[k]) return;          // mantém a primeira origem vista
+    if (origemByKey[k]) return;
     const o = normOrigem(d.origem);
     if (o) origemByKey[k] = o;
   });
@@ -74,7 +85,8 @@ export function calcMetrics(allRows, inCohort) {
   });
 
   return {
-    leads, stillLead, contact: nowContact, curious: nowCurious, qualif: nowQualif, rate,
+    leads, stillLead, contact: nowContact, curious: nowCurious,
+    qualif: nowQualif, qualifAtual, rate,
     latestStatus, leadsSet, byOrigem, byVendedor, comVendedor, aguardando,
   };
 }

@@ -2,14 +2,16 @@ import { Users } from "lucide-react";
 import { T } from "../theme";
 import { Card, SLabel } from "./ui";
 
-// ─── Breakdown panel ─────────────────────────────────────────
-export function BreakdownPanel({ leads, stillLead, contact, curious, qualif, rate }) {
+// ─── Breakdown panel (status atual) ──────────────────────────
+export function BreakdownPanel({ leads, stillLead, contact, curious, qualif, comVendedor = 0 }) {
+  const pctOf = (v) => (leads > 0 ? Math.round((v / leads) * 100) : 0);
   const rows = [
-    { label: "Total recebidos", value: leads,     color: T.muted2, pct: 100,  bold: true },
-    { label: "Ainda como Lead", value: stillLead, color: T.blue,   pct: leads > 0 ? Math.round(stillLead / leads * 100) : 0 },
-    { label: "Em andamento",    value: contact,   color: T.green,  pct: leads > 0 ? Math.round(contact   / leads * 100) : 0 },
-    { label: "Curioso",         value: curious,   color: T.amber,  pct: leads > 0 ? Math.round(curious   / leads * 100) : 0 },
-    { label: "Qualificado",     value: qualif,    color: T.violet, pct: rate,  bold: true },
+    { label: "Total recebidos", value: leads,       color: T.muted2, pct: 100,               bold: true },
+    { label: "Ainda como Lead", value: stillLead,   color: T.blue,   pct: pctOf(stillLead) },
+    { label: "Em andamento",    value: contact,     color: T.green,  pct: pctOf(contact) },
+    { label: "Curioso",         value: curious,     color: T.amber,  pct: pctOf(curious) },
+    { label: "Qualificado",     value: qualif,      color: T.violet, pct: pctOf(qualif) },
+    { label: "Com vendedor",    value: comVendedor, color: T.cyan,   pct: pctOf(comVendedor), bold: true },
   ];
 
   return (
@@ -19,10 +21,11 @@ export function BreakdownPanel({ leads, stillLead, contact, curious, qualif, rat
       {/* Barra proporcional */}
       <div style={{ display: "flex", height: 6, borderRadius: 99, overflow: "hidden", marginBottom: 24, gap: 2 }}>
         {[
-          { v: stillLead, c: T.blue   },
-          { v: contact,   c: T.green  },
-          { v: curious,   c: T.amber  },
-          { v: qualif,    c: T.violet },
+          { v: stillLead,   c: T.blue   },
+          { v: contact,     c: T.green  },
+          { v: curious,     c: T.amber  },
+          { v: qualif,      c: T.violet },
+          { v: comVendedor, c: T.cyan   },
         ].filter(x => x.v > 0).map((x, i) => (
           <div key={i} style={{
             height: "100%",
