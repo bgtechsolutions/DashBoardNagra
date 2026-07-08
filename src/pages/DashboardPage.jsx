@@ -26,13 +26,15 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
   const [start, setStart] = useState(today.slice(0, 8) + "01");
   const [end,   setEnd]   = useState(today);
 
-  const f = dados.filter((d) => {
-    try { const dt = parseDataBR(d.data); return dt >= new Date(start + "T00:00:00") && dt <= new Date(end + "T23:59:59"); }
+  const inRange = (ds) => {
+    try { const dt = parseDataBR(ds); return dt >= new Date(start + "T00:00:00") && dt <= new Date(end + "T23:59:59"); }
     catch { return false; }
-  });
+  };
+  const f = dados.filter((d) => inRange(d.data));   // atividade no período (tendência/recentes)
 
-  // Todos os KPIs calculados a partir de contatos ÚNICOS
-  const m = calcMetrics(f);
+  // KPIs por COORTE: a data = quando o lead ENTROU; status/conversão do histórico inteiro
+  const m = calcMetrics(dados, inRange);
+  const emMaturacao = new Date(end + "T23:59:59") >= new Date(Date.now() - 7 * 864e5);
   const { leads, contact, curious, qualif, rate, stillLead, byOrigem, byVendedor, comVendedor, aguardando } = m;
 
   // Sparklines por dia (baseados em eventos únicos diários)
@@ -96,6 +98,14 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
           </div>
         </div>
       </div>
+
+      {/* Aviso de coorte em maturação */}
+      {emMaturacao && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", marginBottom: 16, borderRadius: 10, background: T.amberDim, border: `1px solid ${T.amber}33`, fontSize: 12, color: T.muted2 }}>
+          <Clock size={13} color={T.amber} />
+          Período recente ainda em maturação — leads que entraram agora podem fechar depois, então a taxa tende a subir com o tempo.
+        </div>
+      )}
 
       {/* KPI grid — os 5 originais (contatos únicos) */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 16, marginBottom: 16 }}>
