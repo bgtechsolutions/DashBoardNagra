@@ -199,7 +199,7 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
       {/* Footer */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `1px solid ${T.border}`, paddingTop: 20, marginTop: 8 }}>
         <span style={{ fontSize: 11, color: T.muted, fontWeight: 600, letterSpacing: ".1em", textTransform: "uppercase" }}>
-          Powered by <span style={{ color: T.blue }}>MAIA</span> Company
+          Powered by <span style={{ color: T.blue }}>BGTECH</span> Solutions
         </span>
         <span style={{ fontSize: 11, color: T.muted, fontFamily: "'JetBrains Mono',monospace" }}>
           {dados.length} registros · auto‑refresh {localStorage.getItem("nagra_interval") || 60}s
