@@ -3,7 +3,7 @@ import { T } from "../theme";
 import { Card, SLabel } from "./ui";
 
 // ─── Breakdown panel (status atual) ──────────────────────────
-export function BreakdownPanel({ leads, stillLead, contact, curious, qualif, comVendedor = 0 }) {
+export function BreakdownPanel({ leads, stillLead, contact, curious, qualif, comVendedor = 0, fechado = 0, naoQuer = 0 }) {
   const pctOf = (v) => (leads > 0 ? Math.round((v / leads) * 100) : 0);
   const rows = [
     { label: "Total recebidos", value: leads,       color: T.muted2, pct: 100,               bold: true },
@@ -11,7 +11,9 @@ export function BreakdownPanel({ leads, stillLead, contact, curious, qualif, com
     { label: "Em andamento",    value: contact,     color: T.green,  pct: pctOf(contact) },
     { label: "Curioso",         value: curious,     color: T.amber,  pct: pctOf(curious) },
     { label: "Qualificado",     value: qualif,      color: T.violet, pct: pctOf(qualif) },
-    { label: "Com vendedor",    value: comVendedor, color: T.cyan,   pct: pctOf(comVendedor), bold: true },
+    { label: "Com vendedor",    value: comVendedor, color: T.cyan,   pct: pctOf(comVendedor) },
+    { label: "Cliente fechado", value: fechado,     color: T.green2, pct: pctOf(fechado),     bold: true },
+    { label: "Não quer",        value: naoQuer,     color: T.red,    pct: pctOf(naoQuer) },
   ];
 
   return (
@@ -26,6 +28,8 @@ export function BreakdownPanel({ leads, stillLead, contact, curious, qualif, com
           { v: curious,     c: T.amber  },
           { v: qualif,      c: T.violet },
           { v: comVendedor, c: T.cyan   },
+          { v: fechado,     c: T.green2 },
+          { v: naoQuer,     c: T.red    },
         ].filter(x => x.v > 0).map((x, i) => (
           <div key={i} style={{
             height: "100%",

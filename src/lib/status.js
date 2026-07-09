@@ -22,6 +22,11 @@ export const isLead     = (s) => LEAD_STATUSES.has((s || "").toLowerCase());
 export const isVendedor = (s) => VENDEDORES.includes((s || "").toLowerCase());
 export const isAguard   = (s) => (s || "").toLowerCase() === "responder";
 
+// Colunas extras do kanban da MAIA (matching flexível — confirmar strings exatas).
+export const isFechado = (s) => { const v = (s || "").toLowerCase(); return v.includes("finaliz") || v.includes("fechad") || v.includes("ganho"); };
+export const isNaoQuer = (s) => { const v = (s || "").toLowerCase(); return v.includes("nao quer") || v.includes("não quer") || v.includes("perdid") || v.includes("desist"); };
+export const isInterno = (s) => (s || "").toLowerCase().includes("interno");
+
 // Badge label/color por status
 const STATUS_BADGE = {
   new:          { label: "Lead",         color: T.blue,   dim: T.blueDim   },
@@ -40,6 +45,10 @@ const STATUS_BADGE = {
   proposal:     { label: "Curioso",      color: T.amber,  dim: T.amberDim  },
 };
 
-export const getStatus = (s) =>
-  STATUS_BADGE[(s || "").toLowerCase()] ||
-  { label: s || "—", color: T.muted, dim: "rgba(100,116,139,.12)" };
+export const getStatus = (s) => {
+  const v = (s || "").toLowerCase();
+  if (isFechado(v)) return { label: "Fechado",  color: T.green2, dim: T.greenDim };
+  if (isNaoQuer(v)) return { label: "Não quer", color: T.red,    dim: "rgba(239,68,68,.12)" };
+  if (isInterno(v)) return { label: "Interno",  color: T.muted,  dim: "rgba(100,116,139,.12)" };
+  return STATUS_BADGE[v] || { label: s || "—", color: T.muted, dim: "rgba(100,116,139,.12)" };
+};

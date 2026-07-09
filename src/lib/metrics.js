@@ -1,14 +1,11 @@
-import { isQualif, isContact, isCurious, isLead, VENDEDORES } from "./status";
+import { isQualif, isContact, isCurious, isLead, isFechado, isNaoQuer, isInterno, VENDEDORES } from "./status";
 import { parseDataBR } from "./csv";
 
 // ─── Métricas por COORTE ──────────────────────────────────────
 // `allRows`  = TODO o histórico (não filtrado).
 // `inCohort` = fn(dataStr) → true se a data de criação cai no período.
 export function calcMetrics(allRows, inCohort) {
-  // Ponte crmRecordId → telefone.
-  // As mudanças para VENDEDOR (giovani/alessandro/murilo) vêm com o crmRecordId
-  // no "Nome" e o telefone VAZIO. Já as mudanças de status da IA trazem o mesmo
-  // crmRecordId COM telefone — então religamos o vendedor ao telefone do lead.
+  // Ponte crmRecordId → telefone (mudanças de vendedor vêm sem telefone).
   const recToPhone = {};
   allRows.forEach((d) => {
     const nome = (d.nome || "").trim();
@@ -19,14 +16,13 @@ export function calcMetrics(allRows, inCohort) {
     const num = (d.numero || "").trim();
     if (num) return num;
     const nome = (d.nome || "").trim();
-    return recToPhone[nome] || nome;   // linha sem telefone → busca pelo crmRecordId
+    return recToPhone[nome] || nome;
   };
 
   // 1. Coorte = leads criados dentro do período
-  const leadsSet = new Set();
+  const criados = new Set();
   allRows.filter(d => d.evento === "Lead Criado" && inCohort(d.data))
-         .forEach(d => { const k = keyOf(d); if (k) leadsSet.add(k); });
-  const leads = leadsSet.size;
+         .forEach(d => { const k = keyOf(d); if (k) criados.add(k); });
 
   // 2. Status ATUAL de cada contato — histórico inteiro, ordem cronológica
   const latestStatus = {};
@@ -38,14 +34,20 @@ export function calcMetrics(allRows, inCohort) {
     if (d.statusNovo.trim()) latestStatus[k] = d.statusNovo.trim().toLowerCase();
   });
 
+  // Remove contatos internos (não são leads reais).
+  const leadsSet = new Set([...criados].filter(k => !isInterno(latestStatus[k])));
+  const leads = leadsSet.size;
+
   // 3. Status atual — só da coorte
   const cohortStatuses = [...leadsSet].map(k => latestStatus[k]).filter(Boolean);
   const stillLead   = cohortStatuses.filter(isLead).length;
   const nowContact  = cohortStatuses.filter(isContact).length;
   const nowCurious  = cohortStatuses.filter(isCurious).length;
   const qualifAtual = cohortStatuses.filter(isQualif).length;   // qualificados AGORA (funil)
+  const fechado     = cohortStatuses.filter(isFechado).length;  // clientes finalizados
+  const naoQuer     = cohortStatuses.filter(isNaoQuer).length;  // perdidos
 
-  // 4. QUALIFICADOS (KPI) = coorte que qualificou em ALGUM momento (todo o histórico)
+  // 4. QUALIFICADOS (KPI) = coorte que qualificou em ALGUM momento
   const everQualifSet = new Set(
     allRows.filter(d => isQualif(d.statusNovo))
      .map(d => keyOf(d))
@@ -86,7 +88,7 @@ export function calcMetrics(allRows, inCohort) {
 
   return {
     leads, stillLead, contact: nowContact, curious: nowCurious,
-    qualif: nowQualif, qualifAtual, rate,
+    qualif: nowQualif, qualifAtual, rate, fechado, naoQuer,
     latestStatus, leadsSet, byOrigem, byVendedor, comVendedor, aguardando,
   };
 }

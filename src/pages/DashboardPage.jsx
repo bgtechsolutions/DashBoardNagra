@@ -6,7 +6,7 @@ import {
 import {
   RefreshCw, Wifi, WifiOff, Loader2, TrendingUp,
   Users, MessageCircle, Star, ArrowRight, Activity, Clock, Zap,
-  UserCheck, Megaphone,
+  UserCheck, Megaphone, CheckCircle2,
 } from "lucide-react";
 import { T } from "../theme";
 import { parseDataBR } from "../lib/csv";
@@ -35,7 +35,7 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
 
   // KPIs por COORTE: a data = quando o lead ENTROU; status/conversão do histórico inteiro
   const m = calcMetrics(dados, inRange);
-  const { leads, contact, curious, qualif, qualifAtual, rate, stillLead, byOrigem, byVendedor, comVendedor, aguardando } = m;
+  const { leads, contact, curious, qualif, qualifAtual, rate, stillLead, byOrigem, byVendedor, comVendedor, aguardando, fechado, naoQuer } = m;
   const emMaturacao = new Date(end + "T23:59:59") >= new Date(Date.now() - 7 * 864e5);
 
   // Sparklines por dia (baseados em eventos únicos diários)
@@ -62,6 +62,8 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
     { name: "Curioso",      value: curious,     color: T.amber  },
     { name: "Qualificado",  value: qualifAtual, color: T.violet },
     { name: "Com vendedor", value: comVendedor, color: T.cyan   },
+    { name: "Fechado",      value: fechado,     color: T.green2  },
+    { name: "Não quer",     value: naoQuer,     color: T.red     },
   ];
 
   const recentes = [...f].reverse().slice(0, 6);
@@ -121,15 +123,16 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
       </div>
 
       {/* KPI grid — novos quadrados */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 16 }}>
-        <KpiCard icon={UserCheck} label="Entregues ao time"  value={comVendedor}          color={T.cyan}  dim={T.cyanDim}  delay={0}   />
-        <KpiCard icon={Clock}     label="Aguardando resposta" value={aguardando}          color={T.amber} dim={T.amberDim} delay={70}  />
-        <KpiCard icon={Megaphone} label="Meta Ads"           value={byOrigem.meta.leads}   color={T.blue}  dim={T.blueDim}  delay={140} />
-        <KpiCard icon={Megaphone} label="Google Ads"         value={byOrigem.google.leads} color={T.amber} dim={T.amberDim} delay={210} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 16, marginBottom: 16 }}>
+        <KpiCard icon={UserCheck}    label="Entregues ao time"  value={comVendedor}          color={T.cyan}   dim={T.cyanDim}  delay={0}   />
+        <KpiCard icon={CheckCircle2} label="Clientes fechados"  value={fechado}              color={T.green2} dim={T.greenDim} delay={70}  />
+        <KpiCard icon={Clock}        label="Aguardando resposta" value={aguardando}          color={T.amber}  dim={T.amberDim} delay={140} />
+        <KpiCard icon={Megaphone}    label="Meta Ads"           value={byOrigem.meta.leads}   color={T.blue}   dim={T.blueDim}  delay={210} />
+        <KpiCard icon={Megaphone}    label="Google Ads"         value={byOrigem.google.leads} color={T.amber}  dim={T.amberDim} delay={280} />
       </div>
 
       {/* Breakdown */}
-      <BreakdownPanel leads={leads} stillLead={stillLead} contact={contact} curious={curious} qualif={qualifAtual} comVendedor={comVendedor} />
+      <BreakdownPanel leads={leads} stillLead={stillLead} contact={contact} curious={curious} qualif={qualifAtual} comVendedor={comVendedor} fechado={fechado} naoQuer={naoQuer} />
 
       {/* Origem dos leads (Meta vs Google) × qualificação */}
       <OrigemPanel byOrigem={byOrigem} totalLeads={leads} />
