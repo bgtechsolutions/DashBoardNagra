@@ -2,18 +2,19 @@ import { useState } from "react";
 import { Database, Clock, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { T } from "../theme";
 import { parseCSV } from "../lib/csv";
+import { DEFAULT_URL, DEFAULT_CUSTOS_URL, getUrl, getCustosUrl, getInterval } from "../lib/config";
 import { Card } from "../components/ui";
 
 // ─── Settings page ───────────────────────────────────────────
 export function SettingsPage({ onSaved }) {
-  const [url,     setUrl]     = useState(localStorage.getItem("nagra_url") || "");
-  const [custosUrl, setCustosUrl] = useState(localStorage.getItem("nagra_custos_url") || "");
-  const [intv,    setIntv]    = useState(localStorage.getItem("nagra_interval") || "60");
+  const [url,     setUrl]     = useState(getUrl());
+  const [custosUrl, setCustosUrl] = useState(getCustosUrl());
+  const [intv,    setIntv]    = useState(getInterval());
   const [testing, setTesting] = useState(false);
   const [result,  setResult]  = useState(null);
   const [saved,   setSaved]   = useState(false);
 
-  const SUGGESTED = "https://docs.google.com/spreadsheets/d/193J6IGsRoNQMfuUq08zXergSKYtGtDmKZw9Jlyp-A6U/export?format=csv&gid=0";
+  const SUGGESTED = DEFAULT_URL;
 
   const salvar = () => {
     localStorage.setItem("nagra_url", url.trim());

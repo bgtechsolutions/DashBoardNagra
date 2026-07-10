@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Settings, Activity, Zap } from "lucide-react";
 import { T } from "./theme";
 import { parseCSV, parseCustosCSV } from "./lib/csv";
+import { getUrl, getCustosUrl, getInterval } from "./lib/config";
 import { DashboardPage } from "./pages/DashboardPage";
 import { SettingsPage } from "./pages/SettingsPage";
 
@@ -15,8 +16,7 @@ export default function App() {
   const timerRef = useRef(null);
 
   const buscarDados = useCallback(async () => {
-    const url = localStorage.getItem("nagra_url");
-    if (!url) { setStatus({ ok: false, loading: false, msg: "URL não configurada — vá em Configurações" }); return; }
+    const url = getUrl();
     setRefreshing(true);
     setStatus({ ok: false, loading: true, msg: "Buscando dados..." });
     const bust = (u) => u + (u.includes("?") ? "&" : "?") + "t=" + Date.now();
@@ -31,7 +31,7 @@ export default function App() {
     } finally { setRefreshing(false); }
 
     // Custos (opcional) — falha silenciosa: nunca derruba a dashboard.
-    const urlCustos = localStorage.getItem("nagra_custos_url");
+    const urlCustos = getCustosUrl();
     if (urlCustos) {
       try {
         const res = await fetch(bust(urlCustos));
@@ -44,7 +44,7 @@ export default function App() {
 
   const iniciarTimer = useCallback(() => {
     clearInterval(timerRef.current);
-    const ms = parseInt(localStorage.getItem("nagra_interval") || "60") * 1000;
+    const ms = parseInt(getInterval()) * 1000;
     timerRef.current = setInterval(buscarDados, ms);
   }, [buscarDados]);
 
