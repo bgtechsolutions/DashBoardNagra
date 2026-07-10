@@ -7,14 +7,14 @@ import { Card } from "./ui";
 const ITENS = [
   { k: "Leads recebidos",       v: "Pessoas novas que chamaram no WhatsApp no período." },
   { k: "Em andamento",          v: "A IA está conversando com o lead agora." },
-  { k: "Curiosos",              v: "Pediram preço ou proposta, mas ainda não fecharam." },
+  { k: "Curiosos",              v: "Só queriam tirar dúvidas ou saber informações, sem intenção real de compra." },
   { k: "Qualificados",          v: "A IA confirmou que é um lead bom, com interesse real de compra." },
   { k: "Taxa qualificação",     v: "% dos leads recebidos que a IA conseguiu qualificar." },
-  { k: "Entregues ao time",     v: "A IA já passou o lead pronto para um vendedor humano fechar." },
+  { k: "Entregues ao time",     v: "Um vendedor pegou o card do lead qualificado e assumiu o atendimento no lugar da IA." },
   { k: "Aguardando resposta",   v: "Estão esperando o time responder — fique de olho para não esfriar." },
   { k: "Meta Ads / Google Ads", v: "De qual anúncio o lead veio, quando dá para identificar." },
   { k: "Funil de conversão",    v: "Mostra onde cada lead está agora, do 'Novo' até o vendedor." },
-  { k: "Por vendedor",          v: "Quantos leads cada vendedor (Giovani, Alessandro, Murilo) recebeu." },
+  { k: "Por vendedor",          v: "Quantos leads cada vendedor (Giovani, Alessandro, Murilo) pegou para atender." },
 ];
 
 export function HelpPanel() {
