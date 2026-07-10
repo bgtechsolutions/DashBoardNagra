@@ -15,6 +15,7 @@ dist-ssr
 # Utilitário de backfill de custos (contém uso da Admin key em runtime) e saída
 backfill-custos.mjs
 custos.csv
+n8n-custos-openai.json
 
 # Editor directories and files
 .vscode/*
