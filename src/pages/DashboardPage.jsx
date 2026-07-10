@@ -33,10 +33,10 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
   };
   const f = dados.filter((d) => inRange(d.data));   // atividade no período (tendência/recentes)
 
-  // KPIs por COORTE: a data = quando o lead ENTROU; status/conversão do histórico inteiro
+  // KPIs por DATA DO EVENTO: cada número conta o que ACONTECEU no período.
   const m = calcMetrics(dados, inRange);
   const { leads, contact, curious, qualif, qualifAtual, rate, stillLead, byOrigem, byVendedor, comVendedor, aguardando, fechado, naoQuer } = m;
-  const emMaturacao = new Date(end + "T23:59:59") >= new Date(Date.now() - 7 * 864e5);
+  const taxaAcima100 = rate > 100;
 
   // Sparklines por dia (baseados em eventos únicos diários)
   const byDay = {};
@@ -55,9 +55,9 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
   const spCurious = days.map((d) => ({ v: byDay[d].curious || 0 }));
   const trendData = days.map((d) => ({ name: d.split("/").slice(0, 2).join("/"), leads: byDay[d].lead, qualif: byDay[d].qualif }));
 
-  // Funil = onde cada contato ESTÁ AGORA (status atual único)
+  // Funil = por quantos estágios os leads passaram DENTRO do período (data do evento)
   const funnelData = [
-    { name: "Ainda Lead",   value: stillLead,   color: T.blue   },
+    { name: "Só Lead",      value: stillLead,   color: T.blue   },
     { name: "Em andamento", value: contact,     color: T.green  },
     { name: "Curioso",      value: curious,     color: T.amber  },
     { name: "Qualificado",  value: qualifAtual, color: T.violet },
@@ -105,11 +105,15 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
       {/* Guia rápido para o dono */}
       <HelpPanel />
 
-      {/* Aviso de coorte em maturação */}
-      {emMaturacao && (
+      {/* Aviso: contagem por data do evento */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", marginBottom: 16, borderRadius: 10, background: T.blueDim, border: `1px solid ${T.blue}33`, fontSize: 12, color: T.muted2 }}>
+        <Clock size={13} color={T.blue} />
+        Cada número conta o que <b style={{ color: T.text }}>&nbsp;aconteceu no período&nbsp;</b> (data do evento na planilha), mesmo que o lead tenha entrado antes.
+      </div>
+      {taxaAcima100 && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", marginBottom: 16, borderRadius: 10, background: T.amberDim, border: `1px solid ${T.amber}33`, fontSize: 12, color: T.muted2 }}>
           <Clock size={13} color={T.amber} />
-          Período recente ainda em maturação — leads que entraram agora podem fechar depois, então a taxa tende a subir com o tempo.
+          A Taxa de qualificação passou de 100% porque houve mais qualificações no período do que leads que entraram nele — vários leads qualificados já tinham entrado antes.
         </div>
       )}
 

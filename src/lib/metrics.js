@@ -1,11 +1,17 @@
-import { isQualif, isContact, isCurious, isLead, isFechado, isNaoQuer, isInterno, VENDEDORES } from "./status";
-import { parseDataBR } from "./csv";
+import {
+  isQualif, isContact, isCurious, isFechado, isNaoQuer,
+  isAguard, isVendedor, isInterno, VENDEDORES,
+} from "./status";
 
-// ─── Métricas por COORTE ──────────────────────────────────────
+// ─── Métricas por DATA DO EVENTO ──────────────────────────────
 // `allRows`  = TODO o histórico (não filtrado).
-// `inCohort` = fn(dataStr) → true se a data de criação cai no período.
-export function calcMetrics(allRows, inCohort) {
-  // Ponte crmRecordId → telefone (mudanças de vendedor vêm sem telefone).
+// `inRange`  = fn(dataStr) → true se a data DO EVENTO cai no período.
+//
+// Regra: cada métrica conta o que ACONTECEU dentro do período (a data da
+// linha na planilha), e não a data de entrada do lead. Ex.: um lead que
+// entrou em 25/06 e foi entregue a um vendedor em 07/07 conta em 07/07.
+export function calcMetrics(allRows, inRange) {
+  // Ponte crmRecordId → telefone (mudanças de status/vendedor vêm sem telefone).
   const recToPhone = {};
   allRows.forEach((d) => {
     const nome = (d.nome || "").trim();
@@ -19,77 +25,88 @@ export function calcMetrics(allRows, inCohort) {
     return recToPhone[nome] || nome;
   };
 
-  // 1. Coorte = leads criados dentro do período
-  const criados = new Set();
-  allRows.filter(d => d.evento === "Lead Criado" && inCohort(d.data))
-         .forEach(d => { const k = keyOf(d); if (k) criados.add(k); });
+  // Contatos internos (em qualquer momento do histórico) — nunca contam.
+  const internoKeys = new Set();
+  allRows.forEach((d) => { if (isInterno(d.statusNovo)) { const k = keyOf(d); if (k) internoKeys.add(k); } });
+  const notInterno = (k) => k && !internoKeys.has(k);
 
-  // 2. Status ATUAL de cada contato — histórico inteiro, ordem cronológica
-  const latestStatus = {};
-  const sorted = [...allRows].sort((a, b) => parseDataBR(a.data) - parseDataBR(b.data));
-  sorted.forEach((d) => {
-    const k = keyOf(d);
-    if (!k) return;
-    if (d.evento === "Lead Criado") latestStatus[k] = "lead";
-    if (d.statusNovo.trim()) latestStatus[k] = d.statusNovo.trim().toLowerCase();
+  // Eventos DENTRO do período (data do evento).
+  const rowsIn = allRows.filter((d) => inRange(d.data));
+
+  // Chaves distintas cujo evento no período satisfaz o predicado.
+  const distinct = (pred) => {
+    const s = new Set();
+    rowsIn.forEach((d) => { if (pred(d)) { const k = keyOf(d); if (notInterno(k)) s.add(k); } });
+    return s;
+  };
+
+  // 1. Leads recebidos = "Lead Criado" no período
+  const createdSet = distinct((d) => d.evento === "Lead Criado");
+  const leads = createdSet.size;
+
+  // 2. Buckets por transição ocorrida no período (contato distinto)
+  const contactSet = distinct((d) => isContact(d.statusNovo));
+  const curiousSet = distinct((d) => isCurious(d.statusNovo));
+  const qualifSet  = distinct((d) => isQualif(d.statusNovo));
+  const fechadoSet = distinct((d) => isFechado(d.statusNovo));
+  const naoQuerSet = distinct((d) => isNaoQuer(d.statusNovo));
+  const aguardSet  = distinct((d) => isAguard(d.statusNovo));
+  const vendSet    = distinct((d) => isVendedor(d.statusNovo));
+
+  const nowContact = contactSet.size;
+  const nowCurious = curiousSet.size;
+  const nowQualif  = qualifSet.size;
+  const fechado    = fechadoSet.size;
+  const naoQuer    = naoQuerSet.size;
+  const aguardando = aguardSet.size;
+  const comVendedor = vendSet.size;
+
+  // 3. Taxa = qualificações no período ÷ leads recebidos no período.
+  //    (Pode passar de 100% em dias com muita qualificação de leads antigos.)
+  const rate = leads > 0 ? Math.round((nowQualif / leads) * 100) : 0;
+
+  // 4. Por vendedor — chaves distintas entregues a cada um no período.
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const byVendedor = {};
+  VENDEDORES.forEach((v) => {
+    const s = new Set();
+    rowsIn.forEach((d) => {
+      if ((d.statusNovo || "").trim().toLowerCase() === v) { const k = keyOf(d); if (notInterno(k)) s.add(k); }
+    });
+    if (s.size) byVendedor[cap(v)] = s.size;
   });
 
-  // Remove contatos internos (não são leads reais).
-  const leadsSet = new Set([...criados].filter(k => !isInterno(latestStatus[k])));
-  const leads = leadsSet.size;
+  // 5. "Ainda como Lead" (funil): recebidos no período que não avançaram
+  //    para nenhum outro estágio dentro do período.
+  const advanced = new Set([
+    ...contactSet, ...curiousSet, ...qualifSet,
+    ...vendSet, ...fechadoSet, ...naoQuerSet, ...aguardSet,
+  ]);
+  const stillLead = [...createdSet].filter((k) => !advanced.has(k)).length;
 
-  // 3. Status atual — só da coorte
-  const cohortStatuses = [...leadsSet].map(k => latestStatus[k]).filter(Boolean);
-  const stillLead   = cohortStatuses.filter(isLead).length;
-  const nowContact  = cohortStatuses.filter(isContact).length;
-  const nowCurious  = cohortStatuses.filter(isCurious).length;
-  const qualifAtual = cohortStatuses.filter(isQualif).length;   // qualificados AGORA (funil)
-  const fechado     = cohortStatuses.filter(isFechado).length;  // clientes finalizados
-  const naoQuer     = cohortStatuses.filter(isNaoQuer).length;  // perdidos
-
-  // 4. QUALIFICADOS (KPI) = coorte que qualificou em ALGUM momento
-  const everQualifSet = new Set(
-    allRows.filter(d => isQualif(d.statusNovo))
-     .map(d => keyOf(d))
-     .filter(k => k && leadsSet.has(k))
-  );
-  const nowQualif = everQualifSet.size;
-  const rate      = leads > 0 ? Math.round((nowQualif / leads) * 100) : 0;
-
-  // 5. Origem por contato (histórico inteiro), só da coorte
+  // 6. Origem — leads recebidos no período, pela origem do "Lead Criado".
   const origemByKey = {};
-  allRows.forEach((d) => {
+  rowsIn.forEach((d) => {
+    if (d.evento !== "Lead Criado") return;
     const k = keyOf(d);
-    if (!k || !leadsSet.has(k)) return;
-    if (origemByKey[k]) return;
-    const o = normOrigem(d.origem);
-    if (o) origemByKey[k] = o;
+    if (!notInterno(k) || origemByKey[k]) return;
+    origemByKey[k] = normOrigem(d.origem) || "indefinido";
   });
   const byOrigem = {
     meta:       { leads: 0, qualif: 0 },
     google:     { leads: 0, qualif: 0 },
     indefinido: { leads: 0, qualif: 0 },
   };
-  leadsSet.forEach((k) => {
+  createdSet.forEach((k) => {
     const o = origemByKey[k] || "indefinido";
     byOrigem[o].leads++;
-    if (everQualifSet.has(k)) byOrigem[o].qualif++;
-  });
-
-  // 6. Vendedores + aguardando — status ATUAL da coorte
-  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-  const byVendedor = {};
-  let comVendedor = 0;
-  let aguardando  = 0;
-  cohortStatuses.forEach((s) => {
-    if (VENDEDORES.includes(s)) { byVendedor[cap(s)] = (byVendedor[cap(s)] || 0) + 1; comVendedor++; }
-    else if (s === "responder") { aguardando++; }
+    if (qualifSet.has(k)) byOrigem[o].qualif++;
   });
 
   return {
     leads, stillLead, contact: nowContact, curious: nowCurious,
-    qualif: nowQualif, qualifAtual, rate, fechado, naoQuer,
-    latestStatus, leadsSet, byOrigem, byVendedor, comVendedor, aguardando,
+    qualif: nowQualif, qualifAtual: nowQualif, rate, fechado, naoQuer,
+    leadsSet: createdSet, byOrigem, byVendedor, comVendedor, aguardando,
   };
 }
 

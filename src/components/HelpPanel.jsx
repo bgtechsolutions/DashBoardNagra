@@ -9,7 +9,7 @@ const ITENS = [
   { k: "Em andamento",          v: "A IA está conversando com o lead agora." },
   { k: "Curiosos",              v: "Só queriam tirar dúvidas ou saber informações, sem intenção real de compra." },
   { k: "Qualificados",          v: "A IA confirmou que é um lead bom, com interesse real de compra." },
-  { k: "Taxa qualificação",     v: "% dos leads recebidos que a IA conseguiu qualificar." },
+  { k: "Taxa qualificação",     v: "Qualificações no período ÷ leads recebidos no período (pode passar de 100% se qualificar leads antigos)." },
   { k: "Entregues ao time",     v: "Um vendedor pegou o card do lead qualificado e assumiu o atendimento no lugar da IA." },
   { k: "Aguardando resposta",   v: "Estão esperando o time responder — fique de olho para não esfriar." },
   { k: "Meta Ads / Google Ads", v: "De qual anúncio o lead veio, quando dá para identificar." },
@@ -34,8 +34,9 @@ export function HelpPanel() {
           <p style={{ fontSize: 13, color: T.muted2, lineHeight: 1.7, marginBottom: 18 }}>
             Aqui você acompanha, <b style={{ color: T.text }}>em tempo real</b>, os leads que a IA atende no seu
             WhatsApp — do primeiro contato até a entrega para o time de vendas. A tela se atualiza sozinha.
-            No <b style={{ color: T.text }}>filtro de data</b> (canto superior), escolha o período: ele conta os
-            leads que <b style={{ color: T.text }}>entraram</b> naquele período, mesmo que fechem depois.
+            No <b style={{ color: T.text }}>filtro de data</b> (canto superior), escolha o período: cada número
+            conta o que <b style={{ color: T.text }}>aconteceu</b> naquele período (a data do evento), mesmo que o
+            lead tenha entrado antes.
           </p>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 28px" }}>
@@ -51,8 +52,8 @@ export function HelpPanel() {
           </div>
 
           <p style={{ fontSize: 12, color: T.muted, lineHeight: 1.6, marginTop: 16, paddingTop: 14, borderTop: `1px solid ${T.border}` }}>
-            💡 Quando aparecer o aviso <b style={{ color: T.amber }}>"período em maturação"</b>, é porque os leads
-            ainda são recentes e podem fechar mais tarde — a taxa tende a subir com o tempo.
+            💡 Como tudo conta pela <b style={{ color: T.text }}>data do evento</b>, a Taxa de qualificação pode
+            passar de 100% num dia em que a IA qualificou vários leads que já tinham entrado antes.
           </p>
         </div>
       )}
