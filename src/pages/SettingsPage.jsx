@@ -7,6 +7,7 @@ import { Card } from "../components/ui";
 // ─── Settings page ───────────────────────────────────────────
 export function SettingsPage({ onSaved }) {
   const [url,     setUrl]     = useState(localStorage.getItem("nagra_url") || "");
+  const [custosUrl, setCustosUrl] = useState(localStorage.getItem("nagra_custos_url") || "");
   const [intv,    setIntv]    = useState(localStorage.getItem("nagra_interval") || "60");
   const [testing, setTesting] = useState(false);
   const [result,  setResult]  = useState(null);
@@ -16,6 +17,7 @@ export function SettingsPage({ onSaved }) {
 
   const salvar = () => {
     localStorage.setItem("nagra_url", url.trim());
+    localStorage.setItem("nagra_custos_url", custosUrl.trim());
     localStorage.setItem("nagra_interval", intv);
     setSaved(true); setTimeout(() => setSaved(false), 2500);
     onSaved();
@@ -69,6 +71,14 @@ export function SettingsPage({ onSaved }) {
           <label style={lbl}>URL da planilha (CSV Export)</label>
           <input style={inpStyle(result ? (result.ok ? "ok" : "err") : undefined)} value={url} onChange={(e) => { setUrl(e.target.value); setResult(null); }} placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=0" />
           <div style={{ fontSize: 11, color: T.muted, marginTop: 6 }}>A planilha precisa estar compartilhada como "Qualquer pessoa com o link pode visualizar".</div>
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <label style={lbl}>URL da aba de custos (opcional)</label>
+          <input style={inpStyle(undefined)} value={custosUrl} onChange={(e) => setCustosUrl(e.target.value)} placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=<gid_da_aba_custos>" />
+          <div style={{ fontSize: 11, color: T.muted, marginTop: 6, lineHeight: 1.6 }}>
+            Aba com colunas <b style={{ color: T.muted2 }}>Data, Custo</b> (uma linha por dia), alimentada pelo n8n a partir da Costs API da OpenAI. Deixe em branco se ainda não tiver.
+          </div>
         </div>
         {result && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20, padding: "11px 14px", borderRadius: 10, background: result.ok ? T.greenDim : "rgba(239,68,68,.1)", border: `1px solid ${result.ok ? T.green + "44" : T.red + "44"}`, fontSize: 12, color: result.ok ? T.green2 : T.red }}>

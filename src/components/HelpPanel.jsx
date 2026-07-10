@@ -11,6 +11,7 @@ const ITENS = [
   { k: "Qualificados",          v: "A IA confirmou que é um lead bom, com interesse real de compra." },
   { k: "Taxa qualificação",     v: "Qualificações no período ÷ leads recebidos no período (pode passar de 100% se qualificar leads antigos)." },
   { k: "Tempo de qualificação", v: "Quanto o lead levou da entrada até ser qualificado. Use a mediana (caso típico); a média sofre com extremos." },
+  { k: "Gasto com IA",          v: "Quanto a OpenAI custou no período (custo real) e o custo médio por lead, quando a aba de custos está configurada." },
   { k: "Entregues ao time",     v: "Um vendedor pegou o card do lead qualificado e assumiu o atendimento no lugar da IA." },
   { k: "Aguardando resposta",   v: "Estão esperando o time responder — fique de olho para não esfriar." },
   { k: "Meta Ads / Google Ads", v: "De qual anúncio o lead veio, quando dá para identificar." },

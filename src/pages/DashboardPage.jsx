@@ -6,7 +6,7 @@ import {
 import {
   RefreshCw, Wifi, WifiOff, Loader2, TrendingUp,
   Users, MessageCircle, Star, ArrowRight, Activity, Clock, Zap,
-  UserCheck, Megaphone, CheckCircle2, Timer,
+  UserCheck, Megaphone, CheckCircle2, Timer, DollarSign,
 } from "lucide-react";
 import { T } from "../theme";
 import { parseDataBR } from "../lib/csv";
@@ -22,7 +22,7 @@ import { VendedorPanel } from "../components/VendedorPanel";
 import { LogItem } from "../components/LogItem";
 
 // ─── Dashboard page ──────────────────────────────────────────
-export function DashboardPage({ dados, status, onRefresh, refreshing }) {
+export function DashboardPage({ dados, custos = [], status, onRefresh, refreshing }) {
   const today = new Date().toISOString().split("T")[0];
   const [start, setStart] = useState(today.slice(0, 8) + "01");
   const [end,   setEnd]   = useState(today);
@@ -32,6 +32,12 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
     catch { return false; }
   };
   const f = dados.filter((d) => inRange(d.data));   // atividade no período (tendência/recentes)
+
+  // Gasto com IA no período (aba de custos alimentada pelo n8n via OpenAI)
+  const custosNoPeriodo = custos.filter((c) => inRange(c.data));
+  const gastoTotal = custosNoPeriodo.reduce((s, c) => s + (c.custo || 0), 0);
+  const gastoBRL   = custosNoPeriodo.some((c) => c.brl);
+  const temCustos  = custosNoPeriodo.length > 0;
 
   // KPIs por DATA DO EVENTO: cada número conta o que ACONTECEU no período.
   const m = calcMetrics(dados, inRange);
@@ -48,6 +54,13 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
     const d = h / 24;
     return `${d < 10 ? d.toFixed(1) : Math.round(d)} dias`;
   };
+
+  // Formata dinheiro conforme a moeda detectada na aba de custos
+  const fmtMoney = (v) => {
+    const sym = gastoBRL ? "R$" : "US$";
+    return `${sym} ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+  const custoPorLead = temCustos && leads > 0 ? gastoTotal / leads : null;
 
   // Sparklines por dia (baseados em eventos únicos diários)
   const byDay = {};
@@ -170,6 +183,39 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
               <div style={{ fontSize: 10, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em", marginTop: 2 }}>Mediana (típico)</div>
             </div>
           </div>
+        )}
+      </Card>
+
+      {/* Gasto com IA no período */}
+      <Card style={{ padding: "18px 24px", marginBottom: 16, display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+        <div style={{ width: 42, height: 42, borderRadius: 10, background: T.greenDim, border: `1px solid ${T.green}44`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <DollarSign size={20} color={T.green2} />
+        </div>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: T.muted, marginBottom: 4 }}>
+            Gasto com IA
+          </div>
+          <div style={{ fontSize: 12, color: T.muted2 }}>
+            {temCustos
+              ? `Custo real da OpenAI no período (${custosNoPeriodo.length} ${custosNoPeriodo.length > 1 ? "dias" : "dia"})`
+              : "Configure a aba de custos em Configurações para ver o gasto real"}
+          </div>
+        </div>
+        {temCustos ? (
+          <div style={{ display: "flex", gap: 32 }}>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: "#fff", fontFamily: "'JetBrains Mono',monospace", lineHeight: 1.1 }}>{fmtMoney(gastoTotal)}</div>
+              <div style={{ fontSize: 10, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em", marginTop: 2 }}>Total</div>
+            </div>
+            {custoPorLead != null && (
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 24, fontWeight: 800, color: T.green2, fontFamily: "'JetBrains Mono',monospace", lineHeight: 1.1 }}>{fmtMoney(custoPorLead)}</div>
+                <div style={{ fontSize: 10, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em", marginTop: 2 }}>Por lead</div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ fontSize: 22, fontWeight: 800, color: T.muted, fontFamily: "'JetBrains Mono',monospace" }}>—</div>
         )}
       </Card>
 

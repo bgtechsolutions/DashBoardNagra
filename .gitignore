@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Utilitário de backfill de custos (contém uso da Admin key em runtime) e saída
+backfill-custos.mjs
+custos.csv
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

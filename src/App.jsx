@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Settings, Activity, Zap } from "lucide-react";
 import { T } from "./theme";
-import { parseCSV } from "./lib/csv";
+import { parseCSV, parseCustosCSV } from "./lib/csv";
 import { DashboardPage } from "./pages/DashboardPage";
 import { SettingsPage } from "./pages/SettingsPage";
 
@@ -9,6 +9,7 @@ import { SettingsPage } from "./pages/SettingsPage";
 export default function App() {
   const [tab,        setTab]        = useState("dashboard");
   const [dados,      setDados]      = useState([]);
+  const [custos,     setCustos]     = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [status,     setStatus]     = useState({ ok: false, loading: true, msg: "Inicializando..." });
   const timerRef = useRef(null);
@@ -18,8 +19,9 @@ export default function App() {
     if (!url) { setStatus({ ok: false, loading: false, msg: "URL não configurada — vá em Configurações" }); return; }
     setRefreshing(true);
     setStatus({ ok: false, loading: true, msg: "Buscando dados..." });
+    const bust = (u) => u + (u.includes("?") ? "&" : "?") + "t=" + Date.now();
     try {
-      const res  = await fetch(url + (url.includes("?") ? "&" : "?") + "t=" + Date.now());
+      const res  = await fetch(bust(url));
       if (!res.ok) throw new Error("HTTP " + res.status);
       const rows = parseCSV(await res.text());
       setDados(rows);
@@ -27,6 +29,17 @@ export default function App() {
     } catch (e) {
       setStatus({ ok: false, loading: false, msg: "Erro: " + e.message });
     } finally { setRefreshing(false); }
+
+    // Custos (opcional) — falha silenciosa: nunca derruba a dashboard.
+    const urlCustos = localStorage.getItem("nagra_custos_url");
+    if (urlCustos) {
+      try {
+        const res = await fetch(bust(urlCustos));
+        if (res.ok) setCustos(parseCustosCSV(await res.text()));
+      } catch { /* ignora — o card só mostra o que houver */ }
+    } else {
+      setCustos([]);
+    }
   }, []);
 
   const iniciarTimer = useCallback(() => {
@@ -70,7 +83,7 @@ export default function App() {
       </div>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 32px" }}>
         {tab === "dashboard"
-          ? <DashboardPage dados={dados} status={status} onRefresh={buscarDados} refreshing={refreshing} />
+          ? <DashboardPage dados={dados} custos={custos} status={status} onRefresh={buscarDados} refreshing={refreshing} />
           : <SettingsPage onSaved={onSaved} />
         }
       </div>
