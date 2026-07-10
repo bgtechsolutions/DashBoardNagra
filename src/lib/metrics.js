@@ -2,6 +2,7 @@ import {
   isQualif, isContact, isCurious, isFechado, isNaoQuer,
   isAguard, isVendedor, isInterno, VENDEDORES,
 } from "./status";
+import { parseDataBR } from "./csv";
 
 // ─── Métricas por DATA DO EVENTO ──────────────────────────────
 // `allRows`  = TODO o histórico (não filtrado).
@@ -84,6 +85,40 @@ export function calcMetrics(allRows, inRange) {
   ]);
   const stillLead = [...createdSet].filter((k) => !advanced.has(k)).length;
 
+  // 5b. Tempo até qualificação (dos leads qualificados NO período).
+  //     Duração = 1ª qualificação no período − data de entrada do lead.
+  const createdAt = {};
+  allRows.forEach((d) => {
+    if (d.evento !== "Lead Criado") return;
+    const k = keyOf(d); const t = parseDataBR(d.data).getTime();
+    if (k && (createdAt[k] == null || t < createdAt[k])) createdAt[k] = t;
+  });
+  const firstAnyAt = {};
+  allRows.forEach((d) => {
+    const k = keyOf(d); const t = parseDataBR(d.data).getTime();
+    if (k && (firstAnyAt[k] == null || t < firstAnyAt[k])) firstAnyAt[k] = t;
+  });
+  const qualifAtInPeriod = {};
+  rowsIn.forEach((d) => {
+    if (!isQualif(d.statusNovo)) return;
+    const k = keyOf(d); if (!notInterno(k)) return;
+    const t = parseDataBR(d.data).getTime();
+    if (qualifAtInPeriod[k] == null || t < qualifAtInPeriod[k]) qualifAtInPeriod[k] = t;
+  });
+  const durs = [];
+  Object.keys(qualifAtInPeriod).forEach((k) => {
+    const base = createdAt[k] ?? firstAnyAt[k];
+    if (base == null) return;
+    const dt = qualifAtInPeriod[k] - base;
+    if (dt >= 0) durs.push(dt);
+  });
+  durs.sort((a, b) => a - b);
+  const tempoQualif = durs.length ? {
+    avgMs:    durs.reduce((s, x) => s + x, 0) / durs.length,
+    medianMs: durs[Math.floor(durs.length / 2)],
+    n:        durs.length,
+  } : null;
+
   // 6. Origem — leads recebidos no período, pela origem do "Lead Criado".
   const origemByKey = {};
   rowsIn.forEach((d) => {
@@ -107,6 +142,7 @@ export function calcMetrics(allRows, inRange) {
     leads, stillLead, contact: nowContact, curious: nowCurious,
     qualif: nowQualif, qualifAtual: nowQualif, rate, fechado, naoQuer,
     leadsSet: createdSet, byOrigem, byVendedor, comVendedor, aguardando,
+    tempoQualif,
   };
 }
 

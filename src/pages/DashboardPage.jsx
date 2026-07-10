@@ -6,7 +6,7 @@ import {
 import {
   RefreshCw, Wifi, WifiOff, Loader2, TrendingUp,
   Users, MessageCircle, Star, ArrowRight, Activity, Clock, Zap,
-  UserCheck, Megaphone, CheckCircle2,
+  UserCheck, Megaphone, CheckCircle2, Timer,
 } from "lucide-react";
 import { T } from "../theme";
 import { parseDataBR } from "../lib/csv";
@@ -35,8 +35,19 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
 
   // KPIs por DATA DO EVENTO: cada número conta o que ACONTECEU no período.
   const m = calcMetrics(dados, inRange);
-  const { leads, contact, curious, qualif, qualifAtual, rate, stillLead, byOrigem, byVendedor, comVendedor, aguardando, fechado, naoQuer } = m;
+  const { leads, contact, curious, qualif, qualifAtual, rate, stillLead, byOrigem, byVendedor, comVendedor, aguardando, fechado, naoQuer, tempoQualif } = m;
   const taxaAcima100 = rate > 100;
+
+  // Formata duração em min / horas / dias, conforme a grandeza
+  const fmtDur = (ms) => {
+    if (ms == null) return "—";
+    const min = ms / 6e4;
+    if (min < 60)  return `${Math.round(min)} min`;
+    const h = min / 60;
+    if (h < 48)    return `${h < 10 ? h.toFixed(1) : Math.round(h)}h`;
+    const d = h / 24;
+    return `${d < 10 ? d.toFixed(1) : Math.round(d)} dias`;
+  };
 
   // Sparklines por dia (baseados em eventos únicos diários)
   const byDay = {};
@@ -134,6 +145,33 @@ export function DashboardPage({ dados, status, onRefresh, refreshing }) {
         <KpiCard icon={Megaphone}    label="Meta Ads"           value={byOrigem.meta.leads}   color={T.blue}   dim={T.blueDim}  delay={210} />
         <KpiCard icon={Megaphone}    label="Google Ads"         value={byOrigem.google.leads} color={T.amber}  dim={T.amberDim} delay={280} />
       </div>
+
+      {/* Tempo médio de qualificação */}
+      <Card style={{ padding: "18px 24px", marginBottom: 16, display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+        <div style={{ width: 42, height: 42, borderRadius: 10, background: T.violetDim, border: `1px solid ${T.violet}44`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Timer size={20} color={T.violet} />
+        </div>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: T.muted, marginBottom: 4 }}>
+            Tempo de qualificação
+          </div>
+          <div style={{ fontSize: 12, color: T.muted2 }}>
+            Da entrada do lead até a IA qualificar — {tempoQualif ? `${tempoQualif.n} qualificado${tempoQualif.n > 1 ? "s" : ""} no período` : "sem qualificados no período"}
+          </div>
+        </div>
+        {tempoQualif && (
+          <div style={{ display: "flex", gap: 32 }}>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: "#fff", fontFamily: "'JetBrains Mono',monospace", lineHeight: 1.1 }}>{fmtDur(tempoQualif.avgMs)}</div>
+              <div style={{ fontSize: 10, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em", marginTop: 2 }}>Média</div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: T.violet, fontFamily: "'JetBrains Mono',monospace", lineHeight: 1.1 }}>{fmtDur(tempoQualif.medianMs)}</div>
+              <div style={{ fontSize: 10, color: T.muted, textTransform: "uppercase", letterSpacing: ".08em", marginTop: 2 }}>Mediana (típico)</div>
+            </div>
+          </div>
+        )}
+      </Card>
 
       {/* Breakdown */}
       <BreakdownPanel leads={leads} stillLead={stillLead} contact={contact} curious={curious} qualif={qualifAtual} comVendedor={comVendedor} fechado={fechado} naoQuer={naoQuer} />
